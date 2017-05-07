@@ -5,8 +5,9 @@ import java.sql.*;
 
 /**
  *
- * @author matikas
+ * @author matikas athanasios
  */
+ 
 public class DerbyDB {
     private static final String DRIVER = "org.apache.derby.jdbc.EmbeddedDriver";
     private static final String CONNECTIONURL = "jdbc:derby:SynergeioDB;create=true";
