@@ -1,0 +1,59 @@
+CREATE TABLE "CUSTOMER"
+(
+   ID int PRIMARY KEY NOT NULL,
+   FIRSTNAME varchar(30) NOT NULL,
+   LASTNAME varchar(30) NOT NULL,
+   FATHERNAME varchar(30),
+   ADT varchar(30),
+   AFM varchar(30),
+   DOY varchar(30),
+   ADDRESS varchar(100),
+   CITY varchar(30),
+   POSTCODE varchar(30),
+   PHONE_HOME varchar(30),
+   PHONE_MOBILE varchar(30),
+   FAX varchar(30),
+   EMAIL varchar(100),
+   NOTES varchar(255)
+)
+;
+
+CREATE TABLE "SERVICE"
+(
+   CUSTOMER_ID int NOT NULL,
+   SERVICELIST_ID int NOT NULL,
+   VEHICLE_ID int NOT NULL,
+   DATE date,
+   KILOMETERS int,
+   PRICE float(52) DEFAULT 0 NOT NULL,
+   BALANCE float(52) DEFAULT 0 NOT NULL,
+   RECEIPTED smallint,
+   NOTES varchar(255)
+)
+;
+
+CREATE TABLE "SERVICELIST"
+(
+   ID int PRIMARY KEY NOT NULL,
+   SERVICE varchar(255) NOT NULL,
+   PRICE float(52) DEFAULT 0 NOT NULL,
+   NOTES varchar(255)
+)
+;
+
+CREATE TABLE "VEHICLE"
+(
+   ID int PRIMARY KEY NOT NULL,
+   CUSTOMER_ID int NOT NULL,
+   BRAND varchar(150) NOT NULL,
+   MODEL varchar(150),
+   PLATENUMBER varchar(30),
+   FRAMENUMBER varchar(30),
+   ENGINENUMBER varchar(30),
+   COLOR varchar(30),
+   NOTES varchar(255)
+)
+;
+
+
+
