@@ -119,6 +119,31 @@ public class Vehicle {
         return false;
     }
     
-    
+    private static void createTable(){
+        conn = DerbyDB.createConnection();
+        System.out.println("Create Table: " + tableName);
+        //createTableService_______________________________________
+        String createString = "CREATE table " + tableName + " ("
+                + "id          INTEGER NOT NULL "
+                + "PRIMARY KEY GENERATED ALWAYS AS IDENTITY "
+                + "(START WITH 1, INCREMENT BY 1),"
+                + "customer_id		INTEGER NOT NULL,"
+                + "brand	     	VARCHAR(150) NOT NULL, "
+                + "model		VARCHAR(150) ,"
+                + "platenumber		VARCHAR(30) ,"
+                + "framenumber		VARCHAR(30) ,"
+                + "enginenumber         VARCHAR(30) ,"
+                + "color		VARCHAR(30) ,"
+                + "notes                VARCHAR(255) )";
+        
+        try {
+            stmt = conn.createStatement();
+            stmt.executeUpdate(createString);
+        } catch (SQLException sqlExcept){
+            System.err.println("createTable SQL Exception: "+ sqlExcept.toString());
+        }
+        
+        DerbyDB.shutdownConnection(conn, stmt);
+    }
     
 }

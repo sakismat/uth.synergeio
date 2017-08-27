@@ -26,6 +26,7 @@ public class Synergeio extends javax.swing.JFrame {
      * Creates new form SynergeioFrame
      */
     public Synergeio() {
+		Customer.createTableIfNotExists();
         initComponents();
     }
 

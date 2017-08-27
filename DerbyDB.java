@@ -56,6 +56,12 @@ public class DerbyDB {
 
     }
    
-    
-
+    public static String cutString(String str, int strlength)
+    {
+        if(str.length() > strlength)
+            return str.substring(0,strlength).replace("'","");
+        else
+            return str.replace("'","");
+    }
+	
 }

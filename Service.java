@@ -123,5 +123,27 @@ public class Service {
     
     
     private static void createTable(){
+        conn = DerbyDB.createConnection();
+        System.out.println("Create Table: " + tableName);//DEBUG
+        //createTableService_______________________________________
+        String createString = "CREATE table " + tableName + " ("
+                + "customer_id		INTEGER NOT NULL,"
+                + "servicelist_id	INTEGER NOT NULL,"
+                + "vehicle_id		INTEGER NOT NULL,"
+                + "date			DATE,"
+                + "kilometers		INTEGER,"
+                + "price     		DOUBLE NOT NULL DEFAULT 0,"
+                + "balance		DOUBLE NOT NULL DEFAULT 0,"
+                + "receipted		SMALLINT,"
+                + "notes         	VARCHAR(255) )";
+        
+        try {
+            stmt = conn.createStatement();
+            stmt.executeUpdate(createString);
+        } catch (SQLException sqlExcept){
+            System.err.println("createTable SQL Exception: "+ sqlExcept.toString());
+        }
+        
+        DerbyDB.shutdownConnection(conn, stmt);
     }
 }
