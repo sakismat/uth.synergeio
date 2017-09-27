@@ -1,13 +1,16 @@
 package synergeio;
 
 import java.sql.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
+import java.util.Date;
 
 
 /**
  *
- * @author matikas athanasios
+ * @author matikas
  */
- 
 public class DerbyDB {
     private static final String DRIVER = "org.apache.derby.jdbc.EmbeddedDriver";
     private static final String CONNECTIONURL = "jdbc:derby:SynergeioDB;create=true";
@@ -56,6 +59,8 @@ public class DerbyDB {
 
     }
    
+    
+    
     public static String cutString(String str, int strlength)
     {
         if(str.length() > strlength)
@@ -63,5 +68,12 @@ public class DerbyDB {
         else
             return str.replace("'","");
     }
-	
+    
+    private static String getDateTime()  
+    {  
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd_hh.mm.ss");  
+        df.setTimeZone(TimeZone.getTimeZone("Europe/Athens"));  
+        return df.format(new Date());  
+    }  
+
 }

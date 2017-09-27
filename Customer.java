@@ -7,12 +7,14 @@ import java.sql.*;
  * @author matikas
  */
 public class Customer {
+    //arxikopoiisi tou onomatos tou pinaka sti vasi dedomenon
     private static String tableName = "CUSTOMER";
     
     // jdbc Connection
     private static Connection conn = null;
     private static Statement stmt = null;
     
+    //
     private Integer id;
     private String firstname;
     private String lastname;
@@ -48,8 +50,8 @@ public class Customer {
         this.email=DerbyDB.cutString(email,100);
         this.notes=DerbyDB.cutString(notes,255);
     }
-	
-	//Constructor 2 -- dimiourgei ena pelati sti vasi (to id to dimiourgei i basi)
+    
+    //Constructor 2 -- dimiourgei ena pelati sti vasi (to id to dimiourgei i basi)
     public Customer(String firstname, String lastname, String fathername, String adt, String afm, String doy, String address, String city, String postcode, String phone_home, String phone_mobile, String fax, String email, String notes){
         this.firstname=DerbyDB.cutString(firstname,30);
         this.lastname=DerbyDB.cutString(lastname,30);
@@ -124,7 +126,6 @@ public class Customer {
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
-	
     //prosvasi stis private metavlites me methodous get... set...
     public void setid(int id){
         this.id=id;
@@ -233,20 +234,96 @@ public class Customer {
     
     public static Customer[] getAllCustomers()
     {   
+        System.out.println("START getAllCustomers");
         Customer[] table = null;
-        return table;
-    }
-    
-    
-    
-    public static Customer[] getAllCustomers()
-    {   
-        Customer[] table = null;
+        int counter = 0;
+        
+        conn = DerbyDB.createConnection();
+        
+        try {
+            stmt = conn.createStatement();
+            
+            ResultSet r = stmt.executeQuery("SELECT COUNT(*) AS rowcount FROM "+ tableName +"");
+            r.next();
+            int count = r.getInt("rowcount") ;
+            r.close() ;
+            //System.out.println("MyTable has " + count + " row(s).");
+            table = new Customer[count];
+            
+            ResultSet rs = stmt.executeQuery("select * from "+ tableName +" ORDER BY lastname");
+            int num = 0;
+            
+            while (rs.next()) {
+                //System.out.println(++num + ": First Name: " + rs.getString(2) + " Last Name: " + rs.getString(3) +"\n");
+                Customer customer = new Customer(rs.getInt("id"), rs.getString("firstname"), rs.getString("lastname"), rs.getString("fathername"), rs.getString("adt"), rs.getString("afm"), rs.getString("doy"), rs.getString("address"), rs.getString("city"), rs.getString("postcode"), rs.getString("phone_home"), rs.getString("phone_mobile"), rs.getString("fax"), rs.getString("email"), rs.getString("notes"));
+                table[counter] = customer;
+                counter++;
+            }
+            rs.close();
+        } catch (Exception e) {
+            System.out.println("getAllCustomers Exception: "+ e.toString());
+        }
+        
+        DerbyDB.shutdownConnection(conn, stmt);
+        System.out.println("END getAllCustomers");
         return table;
     }
     
     
 
+    public static String[][] getCustomersTable()
+    {
+        System.out.println("START getCustomersTable");
+        String[][] customers = new String [][] {
+                                {null,null,null,null,null,null,null,null}
+                            };
+        int counter = 0;
+        
+        conn = DerbyDB.createConnection();
+        
+        try {
+            stmt = conn.createStatement();
+            
+            ResultSet r = stmt.executeQuery("SELECT COUNT(*) AS rowcount FROM "+ tableName +"");
+            r.next();
+            int count = r.getInt("rowcount") ;
+            r.close() ;
+            //System.out.println("MyTable has " + count + " row(s).");
+            if(count>0){
+                customers = new String[count][8];
+
+                //ResultSet rs = stmt.executeQuery("select * from "+ tableName +" ORDER BY lastname");
+                ResultSet rs = stmt.executeQuery("select customer.id, customer.lastname, customer.firstname, customer.fathername, customer.city, customer.address, SUM(service.balance) AS count_balance, SUM(service.price) AS count_price "
+                        + "FROM customer LEFT JOIN service "
+                        + "ON customer.id = service.customer_id "
+                        + "GROUP BY customer.id, customer.lastname, customer.firstname, customer.fathername, customer.city, customer.address "
+                        + "ORDER BY lastname");
+                
+                int num = 0;
+                
+                while (rs.next()) {
+                    //System.out.println(++num + ": First Name: " + rs.getString(2) + " Last Name: " + rs.getString(3) +"\n");
+                    customers[counter][0] = Integer.toString(rs.getInt("id"));
+                    customers[counter][1] = rs.getString("lastname");
+                    customers[counter][2] = rs.getString("firstname");
+                    customers[counter][3] = rs.getString("fathername");
+                    customers[counter][4] = rs.getString("city");
+                    customers[counter][5] = rs.getString("address");
+                    customers[counter][6] = rs.getString("count_price");
+                    customers[counter][7] = rs.getString("count_balance");
+
+                    counter++;
+                }
+                rs.close();
+            }
+        } catch (Exception e) {
+            System.err.println("getAllCustomers Exception: "+ e.toString());
+        }
+        
+        DerbyDB.shutdownConnection(conn, stmt);
+        System.out.println("END getCustomersTable");
+        return customers;
+    }
     
     
     public static Boolean deleteCustomer (String id)
@@ -309,9 +386,9 @@ public class Customer {
         
         return result;
     }
-	
-	
-	public static void createTableIfNotExists(){
+    
+    
+    public static void createTableIfNotExists(){
         
         conn = DerbyDB.createConnection();
         
@@ -365,4 +442,3 @@ public class Customer {
         DerbyDB.shutdownConnection(conn, stmt);
     }
 }
-

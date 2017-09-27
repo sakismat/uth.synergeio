@@ -5,11 +5,17 @@
 package synergeio;
 import java.awt.Component;
 import java.awt.Toolkit;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.Connection;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.regex.Pattern;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
@@ -26,7 +32,10 @@ public class Synergeio extends javax.swing.JFrame {
      * Creates new form SynergeioFrame
      */
     public Synergeio() {
-		Customer.createTableIfNotExists();
+        Customer.createTableIfNotExists();
+        Service.createTableIfNotExists();
+        ServiceList.createTableIfNotExists();
+        Vehicle.createTableIfNotExists();
         initComponents();
     }
 
@@ -1289,7 +1298,34 @@ public class Synergeio extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     private void UpdatesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdatesActionPerformed
-        
+        try {
+            // Create a URL for the desired page
+            URL url = new URL("http://sakismat.selfip.com/java_products_updates/" + program_name + "/version.txt");
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                String str;
+                //while ((str = in.readLine()) != null) {
+                //System.out.println(str);
+                str = in.readLine();
+                if ( str != null ){
+                    String cmp = compare(version, str);
+                    if ( cmp.equals("==") || cmp.equals(">") ){
+                        JOptionPane.showMessageDialog(rootPane, "Έχετε την νεότερη έκδοση!\n"
+                                + "Τρέχουσα έκδοση: " + version);
+                    }else if ( cmp.equals("<") ){
+                        JOptionPane.showMessageDialog(rootPane, "Βρέθηκε νεότερη έκδοση!\n"
+                                + "Τρέχουσα έκδοση: " + version + "\n"
+                                        + "Νέα έκδοση: " + str + "\n"
+                                                + "Αν θέλετε να αναβαθμίσετε το πρόγραμμα επισκεφτείτε το site μου ή επικοινωνήστε μαζί μου");
+                    }
+                }else{
+                    JOptionPane.showMessageDialog(rootPane, "Σφάλμα! \n Το αρχείο δεν βρέθηκε.");
+                }
+            }
+        } catch (MalformedURLException e) {
+            JOptionPane.showMessageDialog(rootPane, "Σφάλμα! \n Λάθος URL.");
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(rootPane, "Σφάλμα! \n Το αρχείο δεν βρέθηκε.");
+        }
     }//GEN-LAST:event_UpdatesActionPerformed
 
     private void servicelistPanelFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_servicelistPanelFocusGained
@@ -1297,23 +1333,182 @@ public class Synergeio extends javax.swing.JFrame {
    }//GEN-LAST:event_servicelistPanelFocusGained
 
     private void cancelnewservicelistButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelnewservicelistButtonActionPerformed
-        
+        if (newservicelistButton.isSelected()) {
+            newservicelistButton.setSelected(false);
+        }
+        savenewservicelistButton.setVisible(false);
+        cancelnewservicelistButton.setVisible(false);
+        deleteservicelistButton.setEnabled(true);
+        updateservicelistButton.setEnabled(true);
+
+        servicelistidTextField.setText("");
+        serviceTextField.setText("");
+        servicelistpriceTextField.setText("");
+        servicelistnotesTextArea.setText("");
     }//GEN-LAST:event_cancelnewservicelistButtonActionPerformed
 
     private void savenewservicelistButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_savenewservicelistButtonActionPerformed
+        //String id = idTextField.getText();
+        String service = serviceTextField.getText();
+        String notes = servicelistnotesTextArea.getText();
         
+        Double price = 0.0;
+        Boolean isDouble;
+        try  
+        {  
+            if(!servicelistpriceTextField.getText().isEmpty())
+                price = Double.parseDouble(servicelistpriceTextField.getText().replace(',', '.')); 
+            isDouble = true;  
+        }  
+        catch( Exception e )  
+        {  
+            isDouble =  false;  
+        }
+
+        //System.out.println("service: "+ service + " " + price);
+
+        if (service.isEmpty()) {
+            JOptionPane.showMessageDialog(Synergeio, "Συμπληρώστε το όνομα της εργασίας");
+        } else if ( !isDouble ) {
+            JOptionPane.showMessageDialog(rootPane, "Βεβαιωθείτε οτι έχετε εισάγει αριθμητική τιμή στο πεδίο \n "
+                    + "\"Χρέωση\" ");
+        } else {
+            ServiceList servicelistObj = new ServiceList(service, price, notes);
+
+            if (newservicelistButton.isSelected()) {
+                newservicelistButton.setSelected(false);
+            }
+            savenewservicelistButton.setVisible(false);
+            cancelnewservicelistButton.setVisible(false);
+            deleteservicelistButton.setEnabled(true);
+            updateservicelistButton.setEnabled(true);
+
+            servicelistidTextField.setText("");
+            serviceTextField.setText("");
+            servicelistpriceTextField.setText("");
+            servicelistnotesTextArea.setText("");
+
+            //RELOAD JLIST
+            ServiceList servicelistObjs[];
+            servicelistObjs = ServiceList.getServiceList();
+            ServiceListListModel ServiceLM = new ServiceListListModel(servicelistObjs);
+            servicelist.setModel(ServiceLM);
+            //RELOAD ServiceList ComboBox
+            synergeio.ServiceListComboBoxModel ServiceCBM = new synergeio.ServiceListComboBoxModel(servicelistObjs);
+            servicelistComboBox.setModel(ServiceCBM);
+
+
+
+        }
     }//GEN-LAST:event_savenewservicelistButtonActionPerformed
 
     private void newservicelistButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newservicelistButtonActionPerformed
-        
+        if (newservicelistButton.isSelected()) {
+            savenewservicelistButton.setVisible(true);
+            cancelnewservicelistButton.setVisible(true);
+            deleteservicelistButton.setEnabled(false);
+            updateservicelistButton.setEnabled(false);
+            //customerlist.clearSelection();
+
+            servicelistidTextField.setText("");
+            serviceTextField.setText("");
+            servicelistpriceTextField.setText("");
+            servicelistnotesTextArea.setText("");
+        } else {
+            savenewservicelistButton.setVisible(false);
+            cancelnewservicelistButton.setVisible(false);
+            deleteservicelistButton.setEnabled(true);
+            updateservicelistButton.setEnabled(true);
+
+            servicelistidTextField.setText("");
+            serviceTextField.setText("");
+            servicelistpriceTextField.setText("");
+            servicelistnotesTextArea.setText("");
+        }
     }//GEN-LAST:event_newservicelistButtonActionPerformed
 
     private void deleteservicelistButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteservicelistButtonActionPerformed
         //DELETE ServiceList
+
+        String id = servicelistidTextField.getText();
+        String service = serviceTextField.getText();
+
+        if (id.isEmpty()) {
+            JOptionPane.showMessageDialog(Synergeio, "Επιλέξτε μία εργασία");
+        } else {
+
+            int choice = JOptionPane.showConfirmDialog(Synergeio, "ΠΡΟΣΟΧΗ! \n Η εργασία \"" + service + "\" θα διαγραφεί!",
+                    "Διαγραφή?", JOptionPane.OK_CANCEL_OPTION);
+
+            if (choice == JOptionPane.OK_OPTION) {
+                ServiceList.deleteServiceList(id);
+
+                servicelistidTextField.setText("");
+                serviceTextField.setText("");
+                servicelistpriceTextField.setText("");
+                servicelistnotesTextArea.setText("");
+
+
+                //RELOAD JLIST
+                ServiceList servicelistObjs[];
+                servicelistObjs = ServiceList.getServiceList();
+                ServiceListListModel ServiceLM = new ServiceListListModel(servicelistObjs);
+                servicelist.setModel(ServiceLM);
+
+
+            }
+        }
     }//GEN-LAST:event_deleteservicelistButtonActionPerformed
 
     private void updateservicelistButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_updateservicelistButtonActionPerformed
+        String string_id = servicelistidTextField.getText();
+        int id = 0;
+        if (!string_id.isEmpty()) {
+            id = Integer.parseInt(string_id);
+        }
+        String service = serviceTextField.getText();
+        String notes = servicelistnotesTextArea.getText();
         
+        Double price = 0.0;
+        Boolean isDouble;
+        try  
+        {  
+            if(!servicelistpriceTextField.getText().isEmpty())
+                price = Double.parseDouble(servicelistpriceTextField.getText().replace(',', '.')); 
+            isDouble = true;  
+        }  
+        catch( Exception e )  
+        {  
+            isDouble =  false;  
+        }
+
+        ServiceList servicelistobj = new ServiceList(id, service, price, notes);
+
+        System.out.println("service: " + service + " notes: " + notes);
+
+        if (id == 0) {
+            JOptionPane.showMessageDialog(Synergeio, "Επιλέξτε Εργασία");
+        } else if (service.isEmpty()) {
+            JOptionPane.showMessageDialog(Synergeio, "Συμπληρώστε το όνομα της εργασίας");
+        } else if ( !isDouble ) {
+            JOptionPane.showMessageDialog(rootPane, "Βεβαιωθείτε οτι έχετε εισάγει αριθμητική τιμή στο πεδίο \n "
+                    + "\"Χρέωση\" ");
+        } else {
+            boolean updated = servicelistobj.updateServiceList();
+            if (updated) {
+                JOptionPane.showMessageDialog(Synergeio, "Η εργασία ενημερώθηκε!");
+            } else {
+                JOptionPane.showMessageDialog(Synergeio, "Δεν έγιναν αλλαγές");
+            }
+        }
+
+        //RELOAD JLIST
+        ServiceList servicelistObjs[];
+        servicelistObjs = ServiceList.getServiceList();
+        ServiceListListModel ServiceLM = new ServiceListListModel(servicelistObjs);
+        servicelist.setModel(ServiceLM);
+
+
     }//GEN-LAST:event_updateservicelistButtonActionPerformed
 
     private void servicelistidTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_servicelistidTextFieldActionPerformed
@@ -1321,12 +1516,77 @@ public class Synergeio extends javax.swing.JFrame {
     }//GEN-LAST:event_servicelistidTextFieldActionPerformed
 
     private void cancelnewcustomerButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelnewcustomerButtonActionPerformed
+        if (newcustomerButton.isSelected()) {
+            newcustomerButton.setSelected(false);
+        }
+        savenewcustomerButton.setVisible(false);
+        cancelnewcustomerButton.setVisible(false);
+        deletecustomerButton.setEnabled(true);
+        updatecustomerButton.setEnabled(true);
 
+        idTextField.setText("");
+        firstnameTextField.setText("");
+        lastnameTextField.setText("");
+        fathernameTextField.setText("");
+        adtTextField.setText("");
+        afmTextField.setText("");
+        doyTextField.setText("");
+        addressTextField.setText("");
+        cityTextField.setText("");
+        postcodeTextField.setText("");
+        phone_homeTextField.setText("");
+        phone_mobileTextField.setText("");
+        faxTextField.setText("");
+        emailTextField.setText("");
+        notesTextArea.setText("");
         
     }//GEN-LAST:event_cancelnewcustomerButtonActionPerformed
 
     private void newcustomerButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newcustomerButtonActionPerformed
-        
+        if (newcustomerButton.isSelected()) {
+            savenewcustomerButton.setVisible(true);
+            cancelnewcustomerButton.setVisible(true);
+            deletecustomerButton.setEnabled(false);
+            updatecustomerButton.setEnabled(false);
+            //customerlist.clearSelection();
+
+            idTextField.setText("");
+            firstnameTextField.setText("");
+            lastnameTextField.setText("");
+            fathernameTextField.setText("");
+            adtTextField.setText("");
+            afmTextField.setText("");
+            doyTextField.setText("");
+            addressTextField.setText("");
+            cityTextField.setText("");
+            postcodeTextField.setText("");
+            phone_homeTextField.setText("");
+            phone_mobileTextField.setText("");
+            faxTextField.setText("");
+            emailTextField.setText("");
+            notesTextArea.setText("");
+        } else {
+            savenewcustomerButton.setVisible(false);
+            cancelnewcustomerButton.setVisible(false);
+            deletecustomerButton.setEnabled(true);
+            updatecustomerButton.setEnabled(true);
+
+            idTextField.setText("");
+            firstnameTextField.setText("");
+            lastnameTextField.setText("");
+            fathernameTextField.setText("");
+            adtTextField.setText("");
+            afmTextField.setText("");
+            doyTextField.setText("");
+            addressTextField.setText("");
+            cityTextField.setText("");
+            postcodeTextField.setText("");
+            phone_homeTextField.setText("");
+            phone_mobileTextField.setText("");
+            faxTextField.setText("");
+            emailTextField.setText("");
+            notesTextArea.setText("");
+        }
     }//GEN-LAST:event_newcustomerButtonActionPerformed
 
     private void adtTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_adtTextFieldActionPerformed
@@ -1356,15 +1616,193 @@ public class Synergeio extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(Synergeio, "Συμπληρώστε το Επώνυμο του πελάτη");
         } else {
             Customer customer = new Customer(firstname, lastname, fathername, adt, afm, doy, address, city, postcode, phone_home, phone_mobile, fax, email, notes);
+
+            if (newcustomerButton.isSelected()) {
+                newcustomerButton.setSelected(false);
+            }
+            savenewcustomerButton.setVisible(false);
+            cancelnewcustomerButton.setVisible(false);
+            deletecustomerButton.setEnabled(true);
+            updatecustomerButton.setEnabled(true);
+
+            idTextField.setText("");
+            firstnameTextField.setText("");
+            lastnameTextField.setText("");
+            fathernameTextField.setText("");
+            adtTextField.setText("");
+            afmTextField.setText("");
+            doyTextField.setText("");
+            addressTextField.setText("");
+            cityTextField.setText("");
+            postcodeTextField.setText("");
+            phone_homeTextField.setText("");
+            phone_mobileTextField.setText("");
+            faxTextField.setText("");
+            emailTextField.setText("");
+            notesTextArea.setText("");
+
+            //RELOAD JLIST
+            Customer customers[];
+            customers = Customer.getAllCustomers();
+            CustomerListModel CustomerLM = new CustomerListModel(customers);
+            customerlist.setModel(CustomerLM);
+
+
+
         }
     }//GEN-LAST:event_savenewcustomerButtonActionPerformed
 
     private void deletecustomerButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deletecustomerButtonActionPerformed
-        
+        //DELETE Customer
+
+        String id = idTextField.getText();
+        String firstname = firstnameTextField.getText();
+        String lastname = lastnameTextField.getText();
+
+        if (id.isEmpty()) {
+            JOptionPane.showMessageDialog(Synergeio, "Επιλέξτε έναν πελάτη");
+        } else {
+
+            int choice = JOptionPane.showConfirmDialog(Synergeio, "ΠΡΟΣΟΧΗ! \n Ο πελάτης \"" + lastname + " " + firstname + "\" θα διαγραφεί!",
+                    "Διαγραφή?", JOptionPane.OK_CANCEL_OPTION);
+
+            if (choice == JOptionPane.OK_OPTION) {
+                Customer.deleteCustomer(id);
+
+                idTextField.setText("");
+                firstnameTextField.setText("");
+                lastnameTextField.setText("");
+                fathernameTextField.setText("");
+                adtTextField.setText("");
+                afmTextField.setText("");
+                doyTextField.setText("");
+                addressTextField.setText("");
+                cityTextField.setText("");
+                postcodeTextField.setText("");
+                phone_homeTextField.setText("");
+                phone_mobileTextField.setText("");
+                faxTextField.setText("");
+                emailTextField.setText("");
+                notesTextArea.setText("");
+
+
+                //RELOAD JLIST
+                Customer customers[];
+                customers = Customer.getAllCustomers();
+                CustomerListModel CustomerLM = new CustomerListModel(customers);
+                customerlist.setModel(CustomerLM);
+
+
+            }
+        }
+
+	
     }//GEN-LAST:event_deletecustomerButtonActionPerformed
 
-    private void updatecustomerButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_updatecustomerButtonActionPerformed
+	
+	private void customerlistValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_customerlistValueChanged
+        // Get selected item
+        //Customer customer = (Customer) customerlist.getSelectedValue();
+        //CustomerListModel.getElementIdAt(4);
+        //customerlist.getModel().getElementAt(customerlist.getSelectedIndex());
+        //System.out.println(customerlist.getSelectedIndex());
+
+        //CustomerLM.getElementIdAt(customerlist.getSelectedIndex());
         
+        if(customerlist.getSelectedIndex() < 0)return;
+        
+        String selected = (String) customerlist.getSelectedValue();
+        String id = selected.split("\\]|\\[")[1];
+        //System.out.println("between " + between);
+
+        Customer customer = new Customer(id);
+
+        //Customer Panel __________________________________________
+        //System.out.println(customerlist.getSelectedValue());
+        idTextField.setText(Integer.toString(customer.getid()));
+        firstnameTextField.setText(customer.getfirstname());
+        lastnameTextField.setText(customer.getlastname());
+        fathernameTextField.setText(customer.getfathername());
+        adtTextField.setText(customer.getadt());
+        afmTextField.setText(customer.getafm());
+        doyTextField.setText(customer.getdoy());
+        addressTextField.setText(customer.getaddress());
+        cityTextField.setText(customer.getcity());
+        postcodeTextField.setText(customer.getpostcode());
+        phone_homeTextField.setText(customer.getphone_home());
+        phone_mobileTextField.setText(customer.getphone_mobile());
+        faxTextField.setText(customer.getfax());
+        emailTextField.setText(customer.getemail());
+        notesTextArea.setText(customer.getnotes());
+        
+        //Service Panel __________________________________________
+        servicePanelCustomerIdTextField.setText(Integer.toString(customer.getid()));
+        servicePanelCustomerFirstnameTextField.setText(customer.getfirstname());
+        servicePanelCustomerLastnameTextField.setText(customer.getlastname());
+        //
+        Vehicle VehicleListObjs[];
+        VehicleListObjs = Vehicle.getAllVehicles(Integer.toString(customer.getid()));
+        //Synergeio.VehicleListComboBoxModel VehicleCBM = new Synergeio.VehicleListComboBoxModel(VehicleListObjs);
+        //vehiclelistComboBox.setModel(VehicleCBM);
+        
+        //Vehicle Panel __________________________________________
+        vehiclePanelCustomerIdTextField.setText(Integer.toString(customer.getid()));
+        vehiclePanelCustomerFirstnameTextField.setText(customer.getfirstname());
+        vehiclePanelCustomerLastnameTextField.setText(customer.getlastname());
+        //Vehicle List
+        //System.out.println("customer id = " + customer.getid());
+        Vehicle  vehicles[];
+        vehicles = Vehicle.getAllVehicles(Integer.toString(customer.getid()));
+        VehicleListModel VehicleLM = new VehicleListModel(vehicles);
+        vehicleList.setModel(VehicleLM);
+    }//GEN-LAST:event_customerlistValueChanged
+	
+    private void updatecustomerButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_updatecustomerButtonActionPerformed
+        String string_id = idTextField.getText();
+        int id = 0;
+        if (!string_id.isEmpty()) {
+            id = Integer.parseInt(idTextField.getText());
+        }
+        //int id = Integer.parseInt(idTextField.getText());
+        String firstname = firstnameTextField.getText();
+        String lastname = lastnameTextField.getText();
+        String fathername = fathernameTextField.getText();
+        String adt = adtTextField.getText();
+        String afm = afmTextField.getText();
+        String doy = doyTextField.getText();
+        String address = addressTextField.getText();
+        String city = cityTextField.getText();
+        String postcode = postcodeTextField.getText();
+        String phone_home = phone_homeTextField.getText();
+        String phone_mobile = phone_mobileTextField.getText();
+        String fax = faxTextField.getText();
+        String email = emailTextField.getText();
+        String notes = notesTextArea.getText();
+
+        Customer customer = new Customer(id, firstname, lastname, fathername, adt, afm, doy, address, city, postcode, phone_home, phone_mobile, fax, email, notes);
+
+        //System.out.println("customer: "+ firstname + " " + lastname);
+
+        if (id == 0) {
+            JOptionPane.showMessageDialog(Synergeio, "Επιλέξτε πελάτη");
+        } else if (lastname.isEmpty()) {
+            JOptionPane.showMessageDialog(Synergeio, "Συμπληρώστε το Επώνυμο του πελάτη");
+        } else {
+            boolean updated = customer.updateCustomer();
+            if (updated) {
+                JOptionPane.showMessageDialog(Synergeio, "Τα στοιχεία του πελάτη ενημερώθηκαν");
+            } else {
+                JOptionPane.showMessageDialog(Synergeio, "Δεν έγιναν αλλαγές");
+            }
+        }
+
+        //RELOAD JLIST
+        Customer customers[];
+        customers = Customer.getAllCustomers();
+        CustomerListModel CustomerLM = new CustomerListModel(customers);
+        customerlist.setModel(CustomerLM);
+
+
 
 
     }//GEN-LAST:event_updatecustomerButtonActionPerformed
@@ -1387,7 +1825,18 @@ public class Synergeio extends javax.swing.JFrame {
     }//GEN-LAST:event_servicepriceTextFieldActionPerformed
 
     private void servicelistValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_servicelistValueChanged
-        
+        if(servicelist.getSelectedIndex() < 0)return;
+        String selected = (String) servicelist.getSelectedValue();
+        String id = selected.split("\\]|\\[")[1];
+        //System.out.println("between " + between);
+
+        ServiceList servicelistobj = new ServiceList(id);
+
+        //System.out.println(customerlist.getSelectedValue());
+        servicelistidTextField.setText(Integer.toString(servicelistobj.getid()));
+        serviceTextField.setText(servicelistobj.getservice());
+        servicelistpriceTextField.setText(Double.toString(servicelistobj.getprice()));
+        servicelistnotesTextArea.setText(servicelistobj.getnotes());
     }//GEN-LAST:event_servicelistValueChanged
 
     private void ServicePanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ServicePanelMouseClicked
@@ -1412,7 +1861,20 @@ public class Synergeio extends javax.swing.JFrame {
     }//GEN-LAST:event_jCalendarButton3PropertyChange
 
     private void servicelistComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_servicelistComboBoxActionPerformed
+        servicelistComboBox.getSelectedItem();
+        ServiceList.getServiceList();
         
+        if(servicelistComboBox.getSelectedIndex() < 0)return;
+        
+        String selected = (String) servicelistComboBox.getSelectedItem();
+        String id = selected.split("\\]|\\[")[1];
+        //System.out.println("between " + between);
+
+        ServiceList servicelistItem = new ServiceList(id);
+
+        //Customer Panel __________________________________________
+        //System.out.println(customerlist.getSelectedValue());
+        servicepriceTextField.setText(Double.toString(servicelistItem.getprice()));
     }//GEN-LAST:event_servicelistComboBoxActionPerformed
 
     private void vehiclelistComboBoxMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_vehiclelistComboBoxMouseClicked
@@ -1436,19 +1898,146 @@ public class Synergeio extends javax.swing.JFrame {
     }//GEN-LAST:event_modelTextFieldActionPerformed
 
     private void cancelnewvehicleButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelnewvehicleButtonActionPerformed
-        
+        if (newvehicleButton.isSelected()) {
+            newvehicleButton.setSelected(false);
+        }
+        savenewvehicleButton.setVisible(false);
+        cancelnewvehicleButton.setVisible(false);
+        deletevehicleButton.setEnabled(true);
+        updatevehicleButton.setEnabled(true);
+
+        vehicleidTextField.setText("");
+            brandTextField.setText("");
+            modelTextField.setText("");
+            colorTextField.setText("");
+            platenumberTextField.setText("");
+            framenumberTextField.setText("");
+            enginenumberTextField.setText("");
+            vehiclenotesTextArea.setText("");
     }//GEN-LAST:event_cancelnewvehicleButtonActionPerformed
 
     private void savenewvehicleButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_savenewvehicleButtonActionPerformed
-    
+		String string_customer_id = vehiclePanelCustomerIdTextField.getText();
+        int customer_id = 0;
+        if (!string_customer_id.isEmpty()) {
+            customer_id = Integer.parseInt(string_customer_id);
+        }
+        String brand = brandTextField.getText();
+        String model = modelTextField.getText();
+        String color = colorTextField.getText();
+        String platenumber = platenumberTextField.getText();
+        String framenumber = framenumberTextField.getText();
+        String enginenumber = enginenumberTextField.getText();
+        String notes = vehiclenotesTextArea.getText();
+
+        if ( customer_id == 0 ) {
+            JOptionPane.showMessageDialog(Synergeio, "Επιλέξτε πελάτη στον οποίο ανήκει το όχημα, \n"
+                    + "από την λίστα στην καρτέλα \"Πελάτες\"");
+        } else if ( brand.isEmpty() ) {
+            JOptionPane.showMessageDialog(Synergeio, "Συμπληρώστε τη \"μάρκα\" του οχήματος");
+        }else{
+            Vehicle vehicle = new Vehicle(customer_id, brand, model, platenumber, framenumber, enginenumber, color, notes);
+
+            if (newvehicleButton.isSelected()) {
+                newvehicleButton.setSelected(false);
+            }
+            savenewvehicleButton.setVisible(false);
+            cancelnewvehicleButton.setVisible(false);
+            deletevehicleButton.setEnabled(true);
+            updatevehicleButton.setEnabled(true);
+
+            vehicleidTextField.setText("");
+            brandTextField.setText("");
+            modelTextField.setText("");
+            colorTextField.setText("");
+            platenumberTextField.setText("");
+            framenumberTextField.setText("");
+            enginenumberTextField.setText("");
+            vehiclenotesTextArea.setText("");
+
+            //RELOAD JLIST
+            Vehicle vehicles[];
+            vehicles = Vehicle.getAllVehicles(string_customer_id);
+            VehicleListModel VehicleLM = new VehicleListModel(vehicles);
+            vehicleList.setModel(VehicleLM);
+        }
+            
     }//GEN-LAST:event_savenewvehicleButtonActionPerformed
 
     private void newvehicleButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newvehicleButtonActionPerformed
-       
+       if (newvehicleButton.isSelected()) {
+            savenewvehicleButton.setVisible(true);
+            cancelnewvehicleButton.setVisible(true);
+            deletevehicleButton.setEnabled(false);
+            updatevehicleButton.setEnabled(false);
+            //vehiclelist.clearSelection();
+
+            vehicleidTextField.setText("");
+            brandTextField.setText("");
+            modelTextField.setText("");
+            colorTextField.setText("");
+            platenumberTextField.setText("");
+            framenumberTextField.setText("");
+            enginenumberTextField.setText("");
+            vehiclenotesTextArea.setText("");
+        } else {
+            savenewvehicleButton.setVisible(false);
+            cancelnewvehicleButton.setVisible(false);
+            deletevehicleButton.setEnabled(true);
+            updatevehicleButton.setEnabled(true);
+
+            vehicleidTextField.setText("");
+            brandTextField.setText("");
+            modelTextField.setText("");
+            colorTextField.setText("");
+            platenumberTextField.setText("");
+            framenumberTextField.setText("");
+            enginenumberTextField.setText("");
+            vehiclenotesTextArea.setText("");
+        }
     }//GEN-LAST:event_newvehicleButtonActionPerformed
 
     private void updatevehicleButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_updatevehicleButtonActionPerformed
+        String string_id = vehicleidTextField.getText();
+        int id = 0;
+        if (!string_id.isEmpty()) {
+            id = Integer.parseInt(string_id);
+        }
+        String string_customer_id = vehiclePanelCustomerIdTextField.getText();
+        int customer_id = 0;
+        if (!string_customer_id.isEmpty()) {
+            customer_id = Integer.parseInt(string_customer_id);
+        }
+        String brand = brandTextField.getText();
+        String model = modelTextField.getText();
+        String color = colorTextField.getText();
+        String platenumber = platenumberTextField.getText();
+        String framenumber = framenumberTextField.getText();
+        String enginenumber = enginenumberTextField.getText();
+        String notes = vehiclenotesTextArea.getText();
+
         
+        Vehicle vehicle = new Vehicle(id, customer_id, brand, model, platenumber, framenumber, enginenumber, color, notes);
+        
+
+        if (id == 0) {
+            JOptionPane.showMessageDialog(Synergeio, "Επιλέξτε Όχημα");
+        } else if (brand.isEmpty()) {
+            JOptionPane.showMessageDialog(Synergeio, "Συμπληρώστε τη \"μάρκα\" του οχήματος");
+        } else {
+            boolean updated = vehicle.updateVehicle();
+            if (updated) {
+                JOptionPane.showMessageDialog(Synergeio, "Τα στοιχεία του οχηματος ενημερώθηκαν!");
+            } else {
+                JOptionPane.showMessageDialog(Synergeio, "Οι αλλαγές δέν αποθηκεύτηκαν");
+            }
+        }
+
+        //RELOAD JLIST
+        Vehicle vehicles[];
+        vehicles = Vehicle.getAllVehicles(string_customer_id);
+        VehicleListModel VehicleLM = new VehicleListModel(vehicles);
+        vehicleList.setModel(VehicleLM);
     }//GEN-LAST:event_updatevehicleButtonActionPerformed
 
     private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
@@ -1456,15 +2045,66 @@ public class Synergeio extends javax.swing.JFrame {
     }//GEN-LAST:event_AboutActionPerformed
 
     private void vehicleListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_vehicleListMouseClicked
-        
+        if (vehiclePanelCustomerIdTextField.getText().isEmpty()){
+            JOptionPane.showMessageDialog(Synergeio, "Επιλέξτε πελάτη από την λίστα στην καρτέλα \"Πελάτες\"");
+        }
     }//GEN-LAST:event_vehicleListMouseClicked
 
     private void deletevehicleButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deletevehicleButtonActionPerformed
-        
+        //DELETE Vehicle
+
+        String id = vehicleidTextField.getText();
+        String customer_id = vehiclePanelCustomerIdTextField.getText();
+        String brand = brandTextField.getText();
+
+        if (id.isEmpty()) {
+            JOptionPane.showMessageDialog(Synergeio, "Επιλέξτε ένα Όχημα");
+        } else {
+
+            int choice = JOptionPane.showConfirmDialog(Synergeio, "ΠΡΟΣΟΧΗ! \n Το όχημα μάρκας \"" + brand + "\" θα διαγραφεί!",
+                    "Διαγραφή?", JOptionPane.OK_CANCEL_OPTION);
+
+            if (choice == JOptionPane.OK_OPTION) {
+                Vehicle.deleteVehicle(id);
+
+                vehicleidTextField.setText("");
+                brandTextField.setText("");
+                modelTextField.setText("");
+                colorTextField.setText("");
+                platenumberTextField.setText("");
+                framenumberTextField.setText("");
+                enginenumberTextField.setText("");
+                vehiclenotesTextArea.setText("");
+
+
+                //RELOAD JLIST
+                Vehicle vehicles[];
+                vehicles = Vehicle.getAllVehicles(customer_id);
+                VehicleListModel VehicleLM = new VehicleListModel(vehicles);
+                vehicleList.setModel(VehicleLM);
+
+
+            }
+        }
     }//GEN-LAST:event_deletevehicleButtonActionPerformed
 
     private void vehicleListValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_vehicleListValueChanged
-        
+        if(vehicleList.getSelectedIndex() < 0)return;
+        String selected = (String) vehicleList.getSelectedValue();
+        String id = selected.split("\\]|\\[")[1];
+        //System.out.println("between " + between);
+
+        Vehicle vehicle = new Vehicle(id);
+
+        //System.out.println(customerlist.getSelectedValue());
+        vehicleidTextField.setText(Integer.toString(vehicle.getid()));
+        brandTextField.setText(vehicle.getbrand());
+        modelTextField.setText(vehicle.getmodel());
+        colorTextField.setText(vehicle.getcolor());
+        platenumberTextField.setText(vehicle.getplatenumber());
+        framenumberTextField.setText(vehicle.getframenumber());
+        enginenumberTextField.setText(vehicle.getenginenumber());
+        vehiclenotesTextArea.setText(vehicle.getnotes());
     }//GEN-LAST:event_vehicleListValueChanged
 
     /**
@@ -1527,6 +2167,7 @@ public class Synergeio extends javax.swing.JFrame {
     private javax.swing.JTextField cityTextField;
     private javax.swing.JTextField colorTextField;
     private javax.swing.JPanel customerPanel;
+    private javax.swing.JList customerlist;
     private javax.swing.JButton deletecustomerButton;
     private javax.swing.JButton deleteservicelistButton;
     private javax.swing.JButton deletevehicleButton;
@@ -1655,9 +2296,6 @@ public class Synergeio extends javax.swing.JFrame {
     private javax.swing.JComboBox vehiclelistComboBox;
     private javax.swing.JTextArea vehiclenotesTextArea;
     // End of variables declaration//GEN-END:variables
-
-    
-
     
 
     public void setDate(JTextField txtField, String dateString)
@@ -1689,5 +2327,30 @@ public class Synergeio extends javax.swing.JFrame {
     public static DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.SHORT);
     public static String version = "0";
     public static String program_name = "Synergeio";
+	
+	
+	private static String compare(String v1, String v2) {
+        String s1 = normalisedVersion(v1);
+        String s2 = normalisedVersion(v2);
+        int cmp = s1.compareTo(s2);
+        String cmpStr = cmp < 0 ? "<" : cmp > 0 ? ">" : "==";
+        //System.out.printf("'%s' %s '%s'%n", v1, cmpStr, v2);
+        return cmpStr;
+    }
+
+    public static String normalisedVersion(String version) {
+        return normalisedVersion(version, ".", 4);
+    }
+
+    public static String normalisedVersion(String version, String sep, int maxWidth) {
+        String[] split = Pattern.compile(sep, Pattern.LITERAL).split(version);
+        StringBuilder sb = new StringBuilder();
+        for (String s : split) {
+            sb.append(String.format("%" + maxWidth + 's', s));
+        }
+        return sb.toString();
+    }
+
+    
 }
 
